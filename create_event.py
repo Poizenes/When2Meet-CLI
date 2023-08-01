@@ -11,32 +11,42 @@ from datetime import date, timedelta, datetime
 
 
 
-
 def create_event(event_name, dates, earliest=18, latest=0, timezone='Europe/Berlin', testing=False):
     display = Display()
     display.start()
     driver = webdriver.Firefox()
     driver.get('https://when2meet.com')
     assert 'When2meet' in driver.title
-    __set_event_name(event_name, driver)
-    __select("TimeZone", timezone, driver)
-    __select("NoEarlierThan", earliest, driver)
-    __select("NoLaterThan", latest, driver)
-    __select_dates(dates, driver)
+    __insert_data(event_name, dates, earliest, latest, timezone, driver)
 
     if testing:
         print('Test finished successfully.')
     else:
         __submit(driver)
-        try:
-            element = WebDriverWait(driver, 10).until(
-                    EC.title_contains(event_name)
-             )
-        finally:
-            print(driver.current_url)
+        print(__get_url(event_name, driver))
 
     driver.quit()
     display.stop()
+
+def __get_url(event_name, driver):
+    url = ''
+
+    try:
+        element = WebDriverWait(driver, 10).until(
+                EC.title_contains(event_name)
+        )
+    finally:
+        url = driver.current_url
+    
+    return url
+
+
+def __insert_data(event_name, dates, earliest, latest, timezone, driver):
+    __set_event_name(event_name, driver)
+    __select("TimeZone", timezone, driver)
+    __select("NoEarlierThan", earliest, driver)
+    __select("NoLaterThan", latest, driver)
+    __select_dates(dates, driver)
 
 
 def __set_event_name(name, driver):
@@ -70,8 +80,7 @@ def __submit(driver):
     submit_button.click()
 
 
-
-if __name__ == '__main__':
+def __read_args():
     import argparse
 
     parser = argparse.ArgumentParser(prog='When2Meet CLI',
@@ -84,8 +93,11 @@ if __name__ == '__main__':
     parser.add_argument('--timezone', default='Europe/Berlin')
     parser.add_argument('--testing', default=False, action='store_true')
 
+    return parser.parse_args()
 
-    args = parser.parse_args()
+
+if __name__ == '__main__':
+    args = __read_args()
 
     earliest_date = datetime.strptime(args.earliest_date, '%Y-%m-%d').date()
     last_date = datetime.strptime(args.last_date, '%Y-%m-%d').date()
